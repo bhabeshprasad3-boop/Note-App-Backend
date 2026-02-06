@@ -6,14 +6,12 @@ async function userRegister(req, res) {
   try {
     const { username, email, password } = req.body;
 
-    
     if (!username || !email || !password) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         message: "All fields are required.",
       });
     }
 
-   
     const isUserAlreadyExists = await userModel.findOne({
       $or: [{ username }, { email }],
     });
@@ -32,7 +30,6 @@ async function userRegister(req, res) {
       password: hashedPassword,
     });
 
-   
     const token = jwt.sign(
       {
         userId: saveUser._id,
@@ -46,11 +43,13 @@ async function userRegister(req, res) {
     res.cookie("token", token, {
       httpOnly: true,
       maxAge: 24 * 60 * 60 * 1000,
+      secure: true,
+      sameSite: "none",
     });
 
     res.status(201).json({
       message: "User registered successfully",
-      user: { 
+      user: {
         id: saveUser._id,
         username: saveUser.username,
         email: saveUser.email,
@@ -65,7 +64,6 @@ async function userRegister(req, res) {
 async function userLogin(req, res) {
   try {
     const { username, email, password } = req.body;
-
 
     if (!(email || username) || !password) {
       return res.status(400).json({
@@ -92,7 +90,6 @@ async function userLogin(req, res) {
       });
     }
 
-    
     const token = jwt.sign(
       {
         userId: user._id,
@@ -103,6 +100,8 @@ async function userLogin(req, res) {
     res.cookie("token", token, {
       httpOnly: true,
       maxAge: 24 * 60 * 60 * 1000,
+      secure: true,
+      sameSite: "none"
     });
 
     return res.status(200).json({
