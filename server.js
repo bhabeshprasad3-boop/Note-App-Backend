@@ -1,23 +1,16 @@
 const app = require('./src/app');
 const connectDB = require('./src/db/db');
-require("dotenv").config()
+require("dotenv").config();
+
+const PORT = process.env.PORT || 3000; 
+connectDB();
 
 
-
-const PORT = 3000;
-async function startServer() {
-  try {
-    connectDB()
-    console.log('connect to database');
-
-    app.listen( PORT,()=>{
-        console.log(`server running on port ${PORT}` );
-    })
-    
-  } catch (error) {
-    console.log(error);
-    return res.status(500).json({ message: "Internal Server Error" });
-  }
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
 }
 
-startServer()
+
+module.exports = app;
