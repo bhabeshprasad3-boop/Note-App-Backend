@@ -1,16 +1,27 @@
 const userModel = require("../models/user.model");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
+const registerSchema = require('../validators/register.validator');
+const loginSchema = require('../validators/login.validator');
 
 async function userRegister(req, res) {
   try {
-    const { username, email, password } = req.body;
+    
+    const result = registerSchema.safeParse(req.body);
 
-    if (!username || !email || !password) {
+    if(!result.success){
+      const formattedError = result.error.flatten().fieldErrors
+
       return res.status(400).json({
-        message: "All fields are required.",
-      });
+        success: false,
+        message: "Validation Error",
+        error: formattedError
+      })
+
     }
+
+    const {username,email,password} = result.data;
+
 
     const isUserAlreadyExists = await userModel.findOne({
       $or: [{ username }, { email }],
@@ -63,22 +74,29 @@ async function userRegister(req, res) {
 
 async function userLogin(req, res) {
   try {
-    const { username, email, password } = req.body;
+    
+    const result = loginSchema.safeParse(req.body);
 
-    if (!(email || username) || !password) {
+    if(!result.success){
+      const formattedError = result.error.flatten().fieldErrors
+
       return res.status(400).json({
-        message: "Username/Email and Password are required.",
-      });
-    }
+        success: false,
+        message: "Validation Error",
+        error: formattedError
+      })
 
-    // Find user by Email OR Username
+    }
+    const {email,password} = result.data;
+
+    
     const user = await userModel.findOne({
-      $or: [{ email }, { username }],
+      email
     });
 
     if (!user) {
       return res.status(400).json({
-        message: "Invalid Credentials", // Security: Clear mat batao ki email galat hai ya password
+        message: "Invalid Email or Password", 
       });
     }
 
@@ -94,7 +112,7 @@ async function userLogin(req, res) {
       {
         userId: user._id,
       },
-      process.env.JWT_SECRET,
+      process.env.JWT_SECRET,{expiresIn: "1d"}
     );
 
     res.cookie("token", token, {
@@ -118,4 +136,21 @@ async function userLogin(req, res) {
   }
 }
 
-module.exports = { userRegister, userLogin };
+async function userLogout(req,res){
+try {
+   
+    res.cookie("token", "", {
+      httpOnly: true,
+      expires: new Date(0), 
+      secure: true,        
+      sameSite: "none",  
+    });
+
+    return res.status(200).json({ message: "Logged out successfully" });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Internal Server Error" });
+  }
+}
+
+module.exports = { userRegister, userLogin,userLogout };
